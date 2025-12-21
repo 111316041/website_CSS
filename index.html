@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>洪至佑的Blog</title>
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <style>
+        /* 自定義樣式 */
+        /* 新增在 <style> 裡面 */
+
+        /* 質感豎線標題樣式 */
+        .section-title {
+            border-left: 5px solid #e6b0aa; /* 左側 5px 寬的實線，顏色為粉藕色 */
+            padding-left: 15px;             /* 文字與線條的距離 */
+            color: #5e5e5e;                 /* 字體顏色改為深灰，比純黑更有質感 */
+            font-weight: bold;              /* 粗體 */
+            margin-bottom: 20px;            /* 標題下方的留白 */
+            letter-spacing: 1px;            /*稍微增加字距，提升閱讀舒適度*/
+        }
+        body {
+            font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+            padding-top: 70px; /* 為了不被置頂導覽列擋住內容 */
+            background-color: #f8f9fa; /* 淡淡的灰背景，讓卡片更明顯 */
+
+            /* 新增這行：設定全站文字為深灰色，閱讀起來更舒服 */
+            color: #555555; 
+
+            /* 新增：強制將表格內的文字改為深灰色 */
+            .table {
+                color: #555555;             /* 設定文字顏色 */
+                --bs-table-color: #555555;  /* 覆蓋 Bootstrap 表格的顏色變數 */
+            }
+            
+            /* 增加一點字距與行高，讓閱讀感更像部落格 */
+            line-height: 1.8;
+        }
+        section {
+            padding: 40px 0; /* 區塊間距 */
+        }
+        /* 讓圖片有圓角與陰影 */
+        .img-custom {
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        /* 調整表格樣式 */
+        .table-custom th {
+            background-color: #e9ecef;
+        }
+        /* 修改 Navbar 樣式 */
+        .navbar {
+            background-color: rgba(33, 37, 41, 0.95) !important; /* 稍微透明的深色背景 */
+            backdrop-filter: blur(10px); /* 磨砂玻璃效果 (蘋果風) */
+        }
+    </style>
+</head>
+<body>
+    <!-- 頁頭區 -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top shadow">
+  <div class="container">
+    <a class="navbar-brand fw-bold" href="#">洪至佑的Blog</a>
+    
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    
+    <div class="collapse navbar-collapse" id="navbarNav">
+      <ul class="navbar-nav ms-auto">
+        <li class="nav-item">
+            <a class="nav-link" href="#">首頁</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" href="#section1">關於我</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" href="#section4">專案/作品集</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" href="#section7">其他</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link btn btn-primary text-white ms-lg-3" href="#contact-footer">聯絡我</a>
+        </li>
+      </ul>
+    </div>
+  </div>
+</nav>
+    
+    <!-- 主內容區 -->
+    <main class="container mt-4">
+    <div class="row g-5"> <div class="col-lg-8">
+            
+            <article id="section1" class="mb-5 bg-white p-4 p-lg-5 rounded shadow-sm">
+                <h2 class="section-title">關於我</h2>
+                <div class="row align-items-center">
+                    <div class="col-md-4 text-center mb-3 mb-md-0">
+                        <img src="assets/images/AslanCircleImage.png" alt="Aslan picture" class="img-fluid rounded-circle border">
+                    </div>
+                    <div class="col-md-8">
+                        <h1 class="h3">洪至佑</h1>
+                        <p class="text-muted"><em><strong><a href="https://www.ntue.edu.tw/" class="text-decoration-none">國立台北教育大學</a></strong>的學生</em></p>
+                        <p>在此部落格中，將分享我在課堂上及生活中的點滴。</p>
+                    </div>
+                </div>
+                <hr>
+                <div class="mt-3">
+                    <p>我是一位正在就讀資訊相關科系的學生，對接電路板等實作硬體課程沒興趣，對<mark>使用人工智慧</mark> 和 <mark>網際網路課程</mark>有興趣。喜歡接收手機新知、研究手機，感覺科技的進步。</p>
+                    <p>此外，我也對文學、財經領域感興趣。閒暇時喜歡去公園、讀奇幻和科幻小說、玩手機的MMORPG遊戲。</p>
+                    <p>不會攝影，只會舉起手機亂拍，希望能封存時間，給予未來細細品嘗。</p>
+                    <p>喜歡美食，願意為此走很～～遠。非常喜歡甜食，就是一個螞蟻人。</p>
+                </div>
+            </article>
+
+            <article id="section2" class="mb-5 bg-white p-4 p-lg-5 rounded shadow-sm">
+                <h2 class="section-title">學歷</h2>
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>時間</th>
+                                <th>就讀</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td>2024.09 - 現在</td><td>國立臺北教育大學資訊科學系</td></tr>
+                            <tr><td>2021.09 - 2024.06</td><td>臺北市立和平高中</td></tr>
+                            <tr><td>2018.09 - 2021.06</td><td>新北市立福和國中</td></tr>
+                            <tr><td>2013.09 - 2018.06</td><td>新北市私立育才國小</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </article>
+
+            <article id="section3" class="mb-5 bg-white p-4 p-lg-5 rounded shadow-sm">
+                <h2 class="section-title">食物喜好</h2>
+                <table class="table table-bordered">
+                    <tr><td>義大利麵</td><td class="text-warning">⭐⭐⭐</td></tr>
+                    <tr><td>拉麵</td><td class="text-warning">⭐⭐⭐</td></tr>
+                    <tr><td>炒飯</td><td class="text-warning">⭐⭐⭐⭐</td></tr>
+                    <tr><td>披薩</td><td class="text-warning">⭐⭐⭐⭐</td></tr>
+                    <tr><td>蛋塔</td><td class="text-warning">⭐⭐⭐⭐⭐</td></tr>
+                </table>
+            </article>
+
+            <article id="section4" class="mb-5 bg-white p-4 p-lg-5 rounded shadow-sm">
+                <h2 class="section-title">音訊作品</h2>
+                <div class="mb-3">
+                    <p>AIVA創作 - Electronic House</p>
+                    <audio controls class="w-100">
+                        <source src="assets/audio/AIVA - New Composition #1.mp3" type="audio/mpeg">
+                    </audio>
+                </div>
+                <div>
+                    <p>Suno創作 - Electronic Dance</p>
+                    <audio controls class="w-100">
+                        <source src="assets/audio/Suno - Feel the Beat.mp3" type="audio/mpeg">
+                    </audio>
+                </div>
+            </article>
+
+            <article id="section5" class="mb-5 bg-white p-4 p-lg-5 rounded shadow-sm">
+                <h2 class="section-title">視訊作品</h2>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <div class="ratio ratio-16x9"> <video controls>
+                                <source src="assets/video/101ShortAndVeryLowQuality.mp4" type="video/mp4">
+                            </video>
+                        </div>
+                        <p class="text-center mt-2 text-muted small">101 短片</p>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="ratio ratio-16x9">
+                            <video controls>
+                                <source src="assets/video/DaanParkShortAndVeryLowQuality.mp4" type="video/mp4">
+                            </video>
+                        </div>
+                        <p class="text-center mt-2 text-muted small">大安森林公園生態池</p>
+                    </div>
+                </div>
+
+                <h5 class="mt-4">AI生成影片（Part A 作品）：<a href="https://youtu.be/YvjA21ghqic" target="_blank">https://youtu.be/YvjA21ghqic</a></h5>
+    </article>
+            </article>
+
+            <article id="section6" class="mb-5 bg-white p-4 p-lg-5 rounded shadow-sm">
+                <h2 class="section-title">圖片作品集</h2>
+                
+                <h5 class="mt-4">國北附近美食</h5>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <div class="card h-100 border-0">
+                            <img src="assets/images/20251119_173133.jpg" class="card-img-top rounded img-custom" alt="炒飯">
+                            <div class="card-body text-center"><p class="card-text">餓菱居-排骨蛋炒飯</p></div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card h-100 border-0">
+                            <img src="assets/images/20250518_181405.jpg" class="card-img-top rounded img-custom" alt="炒餅">
+                            <div class="card-body text-center"><p class="card-text">陸光大姐-炒餅</p></div>
+                        </div>
+                    </div>
+                </div>
+
+                <h5 class="mt-4">大安森林公園落羽松</h5>
+                <div class="row g-2">
+                    <div class="col-4">
+                        <img src="assets/images/20241227_145131(1).jpg" class="img-fluid rounded" alt="落羽松1">
+                    </div>
+                    <div class="col-4">
+                        <img src="assets/images/20241227_144819(1).jpg" class="img-fluid rounded" alt="落羽松2">
+                    </div>
+                    <div class="col-4">
+                        <img src="assets/images/20250102_142031(1).jpg" class="img-fluid rounded" alt="落羽松3">
+                    </div>
+                </div>
+            </article>
+
+            <article id="section7" class="mb-5 bg-white p-4 p-lg-5 rounded shadow-sm">
+                <h2 class="section-title">更多資訊</h2>
+                
+                <div class="ratio ratio-4x3 mb-4">
+                    <embed src="assets/pdf/多媒體個人部落格.pdf" type="application/pdf">
+                </div>
+
+                <h3 class="section-title mb-3">小遊戲（Part B 作品）</h3>
+
+                <h5 class="mt-4 lh-base">
+                    說明：請點擊下方遊戲畫面以開始操作 (電腦請用 <kbd>WASD</kbd> 鍵，手機請觸控)。
+                </h5>
+
+                <div class="ratio ratio-16x9 mb-4 shadow-sm" style="border-radius: 10px; overflow: hidden;">
+                    <iframe src="game.html" style="border:0;"></iframe>
+                </div>
+
+                <p>所在地圖：</p>
+                <div class="ratio ratio-16x9">
+                   <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3615.2784024338266!2d121.54206247541927!3d25.02462437782254!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3442a908a8232611%3A0xeebfb2d71a5025c7!2z5ZyL56uL6Ie65YyX5pWZ6IKy5aSn5a24!5e0!3m2!1szh-TW!2stw!4v1731827435609!5m2!1szh-TW!2stw" style="border:0;" allowfullscreen="" loading="lazy"></iframe> 
+                </div>
+            </article>
+
+        </div> <div class="col-lg-4">
+            <div class="p-4 mb-3 bg-light rounded shadow-sm sticky-top" style="top: 80px; z-index: 1;">
+                <h4 class="fw-bold">綽號</h4>
+                <p class="mb-0">人如其名，或許不假。成長過程的各種綽號，或許正在慢慢地改變著我......</p>
+                <hr>
+                <p>你可以叫我：<strong>佑子、紅柚子</strong>。</p>
+                <p>我也自己取了一個感覺很酷的綽號：「<strong>遊子</strong>」。</p>
+                
+                <div class="mt-4">
+                    <details class="btn btn-outline-danger w-100 text-start">
+                        <summary>點擊查看我討厭的食物！</summary>
+                        <p class="mt-2 small">我很討厭香菜、豬肝、油蔥、苦瓜！！！</p>
+                    </details>
+                </div>
+            </div>
+        </div> </div> </main>
+    
+    <!-- 頁尾區 -->
+    <footer id="contact-footer" class="bg-dark text-white text-center py-4 mt-5">
+    <div class="container">
+        <p class="mb-1">聯絡我們：<a href="mailto:s111316041@stu.ntue.edu.tw" class="text-white text-decoration-underline">s111316041@stu.ntue.edu.tw</a></p>
+        <time datetime="2025-12-01" class="small text-white-50">最後更新日期：2025年12月01日</time>
+        <p class="small text-white-50 mt-2">© 2025 洪至佑的個人部落格</p>
+    </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css"></script>
+
+</body>
+</html>
