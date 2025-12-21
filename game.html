@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>無限過馬路 (Crossy Road 2D)</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #333;
+            overflow: hidden;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            touch-action: none; /* 防止手機上下滑動捲動頁面 */
+        }
+
+        #game-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #87CEEB; /* 天空藍背景 */
+        }
+
+        canvas {
+            box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+            background-color: #87CEEB;
+        }
+
+        /* UI 元素 */
+        .ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        #score-board {
+            padding: 20px;
+            font-size: 32px;
+            font-weight: bold;
+            color: white;
+            text-shadow: 2px 2px 0 #000;
+            text-align: left;
+        }
+
+        /* 新增學號樣式 */
+        #student-info {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background-color: white;
+            color: black;
+            padding: 10px 20px;
+            font-size: 18px;
+            font-weight: bold;
+            border-radius: 8px;
+            z-index: 100; /* 確保在最上層，蓋過 Overlay */
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            pointer-events: none; /* 讓點擊穿透，不影響遊戲操作 */
+        }
+
+        /* 遊戲結束/開始畫面 */
+        #menu-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            z-index: 10;
+            pointer-events: auto;
+            backdrop-filter: blur(5px);
+            transition: opacity 0.3s;
+        }
+
+        #menu-overlay.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        h1 {
+            font-size: 48px;
+            margin-bottom: 10px;
+            text-shadow: 3px 3px 0 #222;
+            color: #fff;
+        }
+
+        button {
+            background-color: #4CAF50;
+            border: none;
+            color: white;
+            padding: 15px 32px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 24px;
+            margin: 4px 2px;
+            cursor: pointer;
+            border-radius: 12px;
+            box-shadow: 0 5px 0 #2E7D32;
+            transition: transform 0.1s, box-shadow 0.1s;
+        }
+
+        button:active {
+            transform: translateY(4px);
+            box-shadow: 0 1px 0 #2E7D32;
+        }
+
+        #controls-hint {
+            margin-top: 20px;
+            font-size: 14px;
+            color: #ddd;
+            text-align: center;
+            line-height: 1.5;
+        }
+
+        /* 觸控控制區 (隱藏但在手機上可用) */
+        #touch-controls {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            display: none; /* 預設隱藏，可透過 JS 判斷手機端開啟 */
+        }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <canvas id="gameCanvas"></canvas>
+    
+    <!-- 新增學號顯示，置於 Canvas 之後但在 UI 之前 -->
+    <div id="student-info">111316041洪至佑</div>
+
+    <div class="ui-layer">
+        <div id="score-board">
+            <div id="current-score">0</div>
+            <!-- 已移除最高分顯示 -->
+        </div>
+    </div>
+
+    <div id="menu-overlay">
+        <h1 id="title-text">無限過馬路</h1>
+        <p id="final-score" style="display:none; font-size: 24px; margin-bottom: 20px;">得分: 0</p>
+        <button id="start-btn" onclick="startGame()">開始遊戲</button>
+        <div id="controls-hint">
+            電腦：方向鍵或 WASD 移動<br>
+            手機：點擊前方移動，滑動改變方向
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- 遊戲常數與設定 ---
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // 遊戲網格大小 (像素)
+    const GRID_SIZE = 40;
+    
+    // 顏色定義
+    const COLORS = {
+        grass: '#8bc34a',
+        grassLight: '#9ccc65',
+        road: '#607d8b',
+        roadLine: '#ffffff',
+        water: '#4fc3f7',
+        waterDark: '#29b6f6',
+        tree: '#2e7d32',
+        log: '#795548',
+        chickenBody: '#ffffff',
+        chickenComb: '#f44336',
+        chickenBeak: '#ffeb3b',
+        car1: '#e53935',
+        car2: '#1e88e5',
+        car3: '#fdd835'
+    };
+
+    // 遊戲狀態
+    let state = {
+        score: 0,
+        highScore: localStorage.getItem('crossyHighScore') || 0,
+        gameOver: true,
+        lanes: [], // 存放每一行的數據
+        player: { gridX: 0, gridY: 0, progress: 0 }, // progress 用於平滑移動動畫
+        cameraY: 0,
+        frameCount: 0,
+        width: 0,
+        height: 0,
+        cols: 0,
+        rows: 0
+    };
+
+    // --- 初始設置與響應式 ---
+    function resize() {
+        // 設定 Canvas 大小填滿螢幕，但保持 GRID_SIZE 的倍數
+        const maxWidth = Math.min(window.innerWidth, 600); // 限制最大寬度以保持遊戲體驗
+        state.width = Math.floor(maxWidth / GRID_SIZE) * GRID_SIZE;
+        state.height = Math.floor(window.innerHeight / GRID_SIZE) * GRID_SIZE;
+        
+        canvas.width = state.width;
+        canvas.height = state.height;
+        
+        state.cols = state.width / GRID_SIZE;
+        state.rows = state.height / GRID_SIZE;
+
+        // 更新 UI (已移除更新最高分的代碼)
+    }
+    
+    window.addEventListener('resize', resize);
+    resize();
+
+    // --- 類別定義 ---
+
+    class Lane {
+        constructor(index) {
+            this.index = index; // Y軸索引 (從0開始往上增加)
+            this.type = 'grass'; // grass, road, water
+            this.obstacles = [];
+            this.speed = 0;
+            this.direction = 1; // 1: 右, -1: 左
+            
+            // 地形生成邏輯
+            if (index < 3) {
+                this.type = 'grass'; // 起始點總是安全區
+            } else {
+                const rand = Math.random();
+                if (rand < 0.45) this.type = 'grass';
+                else if (rand < 0.8) this.type = 'road';
+                else this.type = 'water';
+            }
+
+            // 根據地形初始化障礙物
+            this.setupLane();
+        }
+
+        setupLane() {
+            switch (this.type) {
+                case 'road':
+                    // 速度: 2 ~ 5 像素/幀 (隨機)
+                    this.speed = (Math.random() * 2 + 1.5) * (Math.random() < 0.5 ? 1 : -1);
+                    this.direction = this.speed > 0 ? 1 : -1;
+                    
+                    // 生成車輛
+                    let numCars = Math.floor(Math.random() * 2) + 1;
+                    for (let i = 0; i < numCars; i++) {
+                        this.obstacles.push({
+                            x: Math.random() * state.width,
+                            width: GRID_SIZE * (Math.random() < 0.5 ? 1.5 : 2.2), // 車身長度
+                            color: Math.random() < 0.33 ? COLORS.car1 : (Math.random() < 0.5 ? COLORS.car2 : COLORS.car3)
+                        });
+                    }
+                    break;
+
+                case 'water':
+                    // 浮木速度設定 (包含防卡死機制)
+                    let speedVal = (Math.random() * 2 + 1); // 基礎速度 1 ~ 3
+                    let dir = (Math.random() < 0.5 ? 1 : -1);
+
+                    // 檢查上一列是否為河流，避免出現「同向且同速」的無解情況
+                    if (this.index > 0) {
+                        const prevLane = state.lanes[this.index - 1];
+                        // 確保上一列存在且是河流
+                        if (prevLane && prevLane.type === 'water') {
+                            const prevDir = prevLane.speed > 0 ? 1 : -1;
+                            const prevSpeed = Math.abs(prevLane.speed);
+
+                            // 如果隨機到的方向與上一列相同
+                            if (dir === prevDir) {
+                                // 檢查速度差異，如果差異太小 (例如 < 0.5)，視為同速風險
+                                if (Math.abs(speedVal - prevSpeed) < 0.5) {
+                                    // 策略：強制反轉方向，確保兩列之間有明顯的相對運動
+                                    dir = -dir;
+                                    // 或者也可以選擇大幅增加速度，但反轉方向對遊戲體驗通常更有趣
+                                }
+                            }
+                        }
+                    }
+
+                    this.speed = speedVal * dir;
+                    this.direction = dir;
+
+                    // 生成浮木
+                    let numLogs = Math.floor(Math.random() * 3) + 2;
+                    // 確保至少有空間可以跳，也不要太滿
+                    let spacing = state.width / numLogs;
+                    
+                    for (let i = 0; i < numLogs; i++) {
+                        this.obstacles.push({
+                            x: (i * spacing) + (Math.random() * 50),
+                            width: GRID_SIZE * (Math.random() * 2 + 1.5),
+                            type: 'log'
+                        });
+                    }
+                    break;
+
+                case 'grass':
+                    // 生成樹木 (靜態障礙)
+                    // 確保中間稍微空一點，讓玩家容易通過
+                    for (let c = 0; c < state.cols; c++) {
+                        // 初始幾行不放樹，避免卡死
+                        if (this.index < 3) continue;
+
+                        if (Math.random() < 0.2) {
+                            this.obstacles.push({
+                                col: c, // 樹木是網格對齊的
+                                type: 'tree'
+                            });
+                        }
+                    }
+                    break;
+            }
+        }
+
+        update() {
+            if (this.type === 'grass') return; // 靜態物件不更新
+
+            // 移動障礙物
+            for (let obs of this.obstacles) {
+                obs.x += this.speed;
+
+                // 循環移動
+                if (this.speed > 0 && obs.x > state.width) {
+                    obs.x = -obs.width;
+                } else if (this.speed < 0 && obs.x + obs.width < 0) {
+                    obs.x = state.width;
+                }
+            }
+        }
+
+        draw(ctx, screenY) {
+            // 繪製背景
+            if (this.type === 'grass') {
+                ctx.fillStyle = (this.index % 2 === 0) ? COLORS.grass : COLORS.grassLight;
+                ctx.fillRect(0, screenY, state.width, GRID_SIZE);
+            } else if (this.type === 'road') {
+                ctx.fillStyle = COLORS.road;
+                ctx.fillRect(0, screenY, state.width, GRID_SIZE);
+                // 畫馬路標線
+                ctx.fillStyle = COLORS.roadLine;
+                ctx.globalAlpha = 0.5;
+                ctx.fillRect(0, screenY + GRID_SIZE - 4, state.width, 2);
+                ctx.globalAlpha = 1.0;
+            } else if (this.type === 'water') {
+                ctx.fillStyle = (this.index % 2 === 0) ? COLORS.water : COLORS.waterDark;
+                ctx.fillRect(0, screenY, state.width, GRID_SIZE);
+            }
+
+            // 繪製障礙物
+            if (this.type === 'grass') {
+                // 樹
+                for (let obs of this.obstacles) {
+                    let treeX = obs.col * GRID_SIZE;
+                    // 樹幹
+                    ctx.fillStyle = '#5D4037';
+                    ctx.fillRect(treeX + 12, screenY + 20, 16, 20);
+                    // 樹葉
+                    ctx.fillStyle = COLORS.tree;
+                    ctx.fillRect(treeX + 4, screenY + 4, 32, 24);
+                    // 樹頂陰影
+                    ctx.fillStyle = '#1b5e20';
+                    ctx.fillRect(treeX + 4, screenY + 24, 32, 4);
+                }
+            } else if (this.type === 'road') {
+                // 車
+                for (let obs of this.obstacles) {
+                    // 車身陰影
+                    ctx.fillStyle = 'rgba(0,0,0,0.2)';
+                    ctx.fillRect(obs.x + 4, screenY + 12, obs.width, 24);
+                    
+                    // 車身
+                    ctx.fillStyle = obs.color;
+                    ctx.fillRect(obs.x, screenY + 8, obs.width, 24);
+                    
+                    // 車頂/窗戶細節
+                    ctx.fillStyle = 'rgba(255,255,255,0.3)';
+                    ctx.fillRect(obs.x + 5, screenY + 10, obs.width - 10, 10);
+
+                    // 輪子
+                    ctx.fillStyle = '#222';
+                    ctx.fillRect(obs.x + 5, screenY + 28, 8, 6);
+                    ctx.fillRect(obs.x + obs.width - 13, screenY + 28, 8, 6);
+                }
+            } else if (this.type === 'water') {
+                // 浮木
+                for (let obs of this.obstacles) {
+                    ctx.fillStyle = COLORS.log;
+                    ctx.fillRect(obs.x, screenY + 6, obs.width, 28);
+                    // 浮木紋路
+                    ctx.fillStyle = '#5d4037';
+                    ctx.fillRect(obs.x + 5, screenY + 10, obs.width - 10, 4);
+                    ctx.fillRect(obs.x + 15, screenY + 22, obs.width - 30, 4);
+                }
+            }
+        }
+    }
+
+    // --- 遊戲邏輯 ---
+
+    function startGame() {
+        // 重置狀態
+        state.score = 0;
+        state.gameOver = false;
+        state.player = { 
+            gridX: Math.floor(state.cols / 2), 
+            gridY: 0, 
+            jumpY: 0, // 用於跳躍動畫
+            isDead: false
+        };
+        state.cameraY = -2; // 讓相機稍微往下看一點
+        state.lanes = [];
+        
+        // 預先生成一些跑道
+        for (let i = 0; i < 20; i++) {
+            state.lanes.push(new Lane(i));
+        }
+
+        document.getElementById('menu-overlay').classList.add('hidden');
+        document.getElementById('current-score').innerText = "0";
+
+        // 啟動迴圈
+        requestAnimationFrame(gameLoop);
+    }
+
+    function checkCollision() {
+        const p = state.player;
+        // 找到玩家當前的 Lane
+        // 注意：lanes array index 就是 lane.index
+        // 但隨著無限延伸，我們可能會清理舊的 lanes，所以要用 find 或者保持索引一致
+        // 這裡為了簡單，我們不刪除舊的 lanes (JS 記憶體能處理數千個物件沒問題，這是一個簡單的優化點)
+        const currentLane = state.lanes[p.gridY];
+
+        if (!currentLane) return; // 保護機制
+
+        // 1. 檢查地圖邊界
+        if (p.gridX < 0 || p.gridX >= state.cols) {
+            die();
+            return;
+        }
+
+        // 2. 檢查靜態障礙 (樹)
+        // 這在移動時已經檢查了，但防呆
+        if (currentLane.type === 'grass') {
+            for (let obs of currentLane.obstacles) {
+                if (obs.col === p.gridX) {
+                    // 卡在樹裡? 
+                    // 理論上 movePlayer 函數會阻止進入，但如果被推或是怎樣
+                }
+            }
+        }
+
+        // 3. 檢查動態障礙 (車) 和 環境危險 (水)
+        const playerRealX = p.gridX * GRID_SIZE;
+        const hitboxMargin = 8; // 碰撞寬容度
+
+        if (currentLane.type === 'road') {
+            for (let car of currentLane.obstacles) {
+                // 簡單的 AABB 碰撞
+                if (playerRealX + GRID_SIZE - hitboxMargin > car.x && 
+                    playerRealX + hitboxMargin < car.x + car.width) {
+                    die();
+                    return;
+                }
+            }
+        } 
+        else if (currentLane.type === 'water') {
+            let onLog = false;
+            // 檢查是否在任何一個浮木上
+            for (let log of currentLane.obstacles) {
+                if (playerRealX + GRID_SIZE/2 > log.x && 
+                    playerRealX + GRID_SIZE/2 < log.x + log.width) {
+                    onLog = true;
+                    // 玩家跟隨浮木移動
+                    // 這裡有點 trick，我們不改變 GridX，只在視覺上偏移？
+                    // 或者更簡單：如果站在浮木上，不死亡，但如果浮木把玩家帶出螢幕，也算死
+                    // 為了簡化邏輯：我們不移動玩家的 GridX，只在碰撞檢測時允許
+                    // 進階版：玩家真實 X 座標跟隨浮木，但這裡我們做 Grid Based
+                    break;
+                }
+            }
+
+            // 在水上但不在浮木上 -> 淹死
+            if (!onLog) {
+                die(); 
+            } else {
+                // 額外挑戰：如果浮木移動，玩家也要跟著動
+                // 這裡簡化處理：不跟著動，玩家必須自己跳來保持位置 (更難)
+                // 為了體驗好一點，我們讓玩家跟著浮木的一點點偏移 (視覺效果)
+                // 真正的 Crossy Road 玩家會被帶走，這裡簡化實現：
+                // 只要站在浮木範圍內就不死，但玩家需要自己往回跳如果快出界
+                p.gridX += (currentLane.speed / GRID_SIZE); 
+            }
+        }
+    }
+
+    function die() {
+        if (state.player.isDead) return;
+        state.player.isDead = true;
+        state.gameOver = true;
+
+        // 更新最高分
+        if (state.score > state.highScore) {
+            state.highScore = state.score;
+            localStorage.setItem('crossyHighScore', state.highScore);
+        }
+
+        // 顯示選單
+        setTimeout(() => {
+            document.getElementById('title-text').innerText = "遊戲結束";
+            document.getElementById('final-score').innerText = `最終得分: ${state.score}`;
+            document.getElementById('final-score').style.display = 'block';
+            document.getElementById('start-btn').innerText = "再玩一次";
+            document.getElementById('menu-overlay').classList.remove('hidden');
+        }, 500);
+    }
+
+    function movePlayer(dx, dy) {
+        if (state.gameOver) return;
+
+        const targetX = Math.round(state.player.gridX + dx); // 用 round 是因為水流可能導致小數點
+        const targetY = state.player.gridY + dy;
+
+        // 不能往回走太多 (防止相機問題)
+        if (targetY < state.player.gridY - 3) return;
+
+        // 檢查目標位置是否有樹
+        // 需要先生成目標行的數據如果不存在 (理論上應該存在)
+        if (!state.lanes[targetY]) {
+             state.lanes[targetY] = new Lane(targetY);
+        }
+        
+        const targetLane = state.lanes[targetY];
+        if (targetLane.type === 'grass') {
+            for (let obs of targetLane.obstacles) {
+                if (obs.col === targetX) {
+                    return; // 撞樹，無法移動
+                }
+            }
+        }
+        
+        // 邊界檢查 (左右)
+        if (targetX < 0 || targetX >= state.cols) return;
+
+        state.player.gridX = targetX;
+        state.player.gridY = targetY;
+
+        // 更新分數
+        if (state.player.gridY > state.score) {
+            state.score = state.player.gridY;
+            document.getElementById('current-score').innerText = state.score;
+        }
+
+        // 生成新地圖
+        // 保持前方有足夠的緩衝區
+        while (state.lanes.length <= state.player.gridY + 15) {
+            state.lanes.push(new Lane(state.lanes.length));
+        }
+
+        // 簡單的跳躍動畫觸發
+        state.player.jumpY = 5;
+    }
+
+    function gameLoop() {
+        if (!state.gameOver) {
+            requestAnimationFrame(gameLoop);
+        }
+
+        state.frameCount++;
+
+        // 1. 更新邏輯
+        // 更新所有可見 Lane 的障礙物
+        // 優化：只更新相機範圍內的 lanes
+        const startRenderIndex = Math.max(0, Math.floor(state.cameraY));
+        const endRenderIndex = startRenderIndex + state.rows + 2;
+
+        for (let i = startRenderIndex; i < endRenderIndex; i++) {
+            if (state.lanes[i]) state.lanes[i].update();
+        }
+
+        // 相機平滑跟隨玩家
+        // 讓玩家保持在螢幕中下方
+        const targetCameraY = state.player.gridY - state.rows + 6; 
+        // 只允許相機向上移動 (不可回頭)
+        if (targetCameraY > state.cameraY) {
+             state.cameraY += (targetCameraY - state.cameraY) * 0.1;
+        }
+        
+        // 碰撞檢測
+        checkCollision();
+
+        // 2. 繪製
+        ctx.clearRect(0, 0, state.width, state.height);
+
+        // 繪製地圖
+        // 轉換坐標系：World Y (0在底) -> Screen Y (0在頂)
+        // ScreenY = (WorldY - CameraY) * GridSize (inverted logic needed)
+        // 這裡我們用簡單的邏輯：Canvas 0,0 是左上。
+        // 我們希望 PlayerY 越大，顯示越上面 (如果相機不動) -> 實際上我們希望地圖往下捲
+        // Draw logic:
+        // ScreenY = height - (LaneIndex - CameraY) * GridSize
+        
+        for (let i = startRenderIndex; i < endRenderIndex; i++) {
+            if (!state.lanes[i]) continue;
+            
+            // 計算螢幕上的 Y 位置
+            // 當 i = cameraY 時，應該在螢幕最底部 (state.height)
+            // 修正：我們希望看到前方。
+            // 設 Player 在 Y=10. CameraY 可能在 5.
+            // Lane 10 應該在螢幕某處。
+            // 數學：screenY = state.height - (i - state.cameraY + 1) * GRID_SIZE;
+            
+            let screenY = state.height - (i - state.cameraY + 1) * GRID_SIZE;
+            state.lanes[i].draw(ctx, screenY);
+        }
+
+        // 繪製玩家
+        let pScreenY = state.height - (state.player.gridY - state.cameraY + 1) * GRID_SIZE;
+        let pScreenX = state.player.gridX * GRID_SIZE;
+
+        // 跳躍動畫偏移
+        if (state.player.jumpY > 0) {
+            state.player.jumpY -= 1;
+            pScreenY -= Math.sin((5 - state.player.jumpY)/5 * Math.PI) * 10;
+        }
+        
+        // 玩家死亡閃爍
+        if (state.player.isDead && Math.floor(Date.now() / 100) % 2 === 0) {
+            // 閃爍隱形
+        } else {
+            drawPlayer(pScreenX, pScreenY);
+        }
+        
+        // 如果掉出螢幕底端也算輸
+        if (pScreenY > state.height) {
+            die();
+        }
+    }
+
+    function drawPlayer(x, y) {
+        // 身體
+        ctx.fillStyle = COLORS.chickenBody;
+        ctx.fillRect(x + 5, y + 5, 30, 30);
+        
+        // 陰影
+        ctx.fillStyle = 'rgba(0,0,0,0.2)';
+        ctx.fillRect(x + 5, y + 35, 30, 5);
+
+        // 雞冠
+        ctx.fillStyle = COLORS.chickenComb;
+        ctx.fillRect(x + 15, y + 2, 6, 6);
+
+        // 眼睛
+        ctx.fillStyle = '#000';
+        // 根據方向畫眼睛 (這裡簡單畫右邊)
+        ctx.fillRect(x + 22, y + 12, 4, 4); 
+
+        // 嘴巴
+        ctx.fillStyle = COLORS.chickenBeak;
+        ctx.fillRect(x + 28, y + 18, 6, 6);
+        
+        // 翅膀
+        ctx.fillStyle = '#eee';
+        ctx.fillRect(x + 8, y + 18, 8, 12);
+    }
+
+    // --- 輸入控制 ---
+
+    // 鍵盤
+    window.addEventListener('keydown', (e) => {
+        if (state.gameOver) {
+            if (e.code === 'Space' || e.code === 'Enter') startGame();
+            return;
+        }
+
+        switch(e.key) {
+            case 'ArrowUp':
+            case 'w':
+            case 'W':
+                movePlayer(0, 1);
+                break;
+            case 'ArrowDown':
+            case 's':
+            case 'S':
+                movePlayer(0, -1);
+                break;
+            case 'ArrowLeft':
+            case 'a':
+            case 'A':
+                movePlayer(-1, 0);
+                break;
+            case 'ArrowRight':
+            case 'd':
+            case 'D':
+                movePlayer(1, 0);
+                break;
+        }
+    });
+
+    // 觸控 (滑動偵測)
+    let touchStartX = 0;
+    let touchStartY = 0;
+
+    canvas.addEventListener('touchstart', (e) => {
+        touchStartX = e.changedTouches[0].screenX;
+        touchStartY = e.changedTouches[0].screenY;
+        e.preventDefault(); // 防止瀏覽器縮放
+    }, {passive: false});
+
+    canvas.addEventListener('touchend', (e) => {
+        if (state.gameOver) {
+            startGame();
+            return;
+        }
+
+        const touchEndX = e.changedTouches[0].screenX;
+        const touchEndY = e.changedTouches[0].screenY;
+        
+        const dx = touchEndX - touchStartX;
+        const dy = touchEndY - touchStartY;
+
+        // 判斷是點擊還是滑動
+        if (Math.abs(dx) < 30 && Math.abs(dy) < 30) {
+            // 點擊視為向前
+            movePlayer(0, 1);
+        } else {
+            // 滑動
+            if (Math.abs(dx) > Math.abs(dy)) {
+                // 水平滑動
+                movePlayer(dx > 0 ? 1 : -1, 0);
+            } else {
+                // 垂直滑動
+                movePlayer(0, dy > 0 ? -1 : 1); // 往下滑是 dy > 0，對應遊戲的 "退後" (-1)
+            }
+        }
+        e.preventDefault();
+    }, {passive: false});
+
+</script>
+
+</body>
+</html>
